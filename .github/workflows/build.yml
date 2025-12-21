@@ -47,7 +47,7 @@ jobs:
         id: remote
         run: |
           IMAGE="ghcr.io/${{ github.repository }}/sample-app:latest"
-          if docker pull $IMAGE > /dev/null 2>&1; then
+          if docker manifest inspect $IMAGE > /dev/null 2>&1; then
             echo "exists=true" >> $GITHUB_OUTPUT
           else
             echo "exists=false" >> $GITHUB_OUTPUT
