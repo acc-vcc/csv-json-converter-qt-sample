@@ -6,7 +6,7 @@ permissions:
 
 on:
   push:
-    branches: [ feature/pushGHCR ]
+    branches: [ master ]
 
 jobs:
   build:
