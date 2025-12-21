@@ -34,36 +34,17 @@ jobs:
             echo "GHCR_PAT not set; skipping GHCR login."
           fi
 
-      - name: Get remote digest
-        id: remote_digest
-        run: |
-          set -e
-          if docker pull ghcr.io/${{ github.repository }}/sample-app:latest 2>/dev/null; then
-            digest=$(docker inspect --format='{{index .RepoDigests 0}}' ghcr.io/${{ github.repository }}/sample-app:latest | cut -d'@' -f2)
-            echo "digest=$digest" >> $GITHUB_OUTPUT
-          else
-            echo "digest=" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Build local image (no push)
-        run: |
-          docker build -t local-sample-app:latest .
-
-      - name: Get local digest
-        id: local_digest
-        run: |
-          digest=$(docker inspect --format='{{index .RepoDigests 0}}' local-sample-app:latest | cut -d'@' -f2)
-          echo "digest=$digest" >> $GITHUB_OUTPUT
-
-      - name: Compare digests    # Dockerfileの変更を検出するためリモートとローカルのdigestsイメージを比較する
+      # Dockerfile の変更を検出
+      - name: Check Dockerfile changes
         id: compare
         run: |
-          if [ "${{ steps.remote_digest.outputs.digest }}" = "${{ steps.local_digest.outputs.digest }}" ]; then
+          if git diff --quiet HEAD~1 HEAD -- Dockerfile; then
             echo "changed=false" >> $GITHUB_OUTPUT
           else
             echo "changed=true" >> $GITHUB_OUTPUT
           fi
 
+      # Dockerfile が変わったときだけ GHCR に push
       - name: Build and push Docker image
         env:
           GHCR_PAT: ${{ secrets.GHCR_PAT }}
@@ -78,12 +59,28 @@ jobs:
           cache-from: type=registry,ref=ghcr.io/${{ github.repository }}/sample-app:cache
           cache-to: type=registry,ref=ghcr.io/${{ github.repository }}/sample-app:cache,mode=max
 
+      # GHCR にイメージが無い場合は fallback でローカル build
+      - name: Ensure build image exists
+        run: |
+          IMAGE="ghcr.io/${{ github.repository }}/sample-app:latest"
+
+          if ! docker pull $IMAGE; then
+            echo "Remote image not found. Building local fallback image..."
+            docker build -t sample-app-local:latest .
+          fi
+
+      # ソースコードのビルド（常に実行）
       - name: Build
         run: |
+          IMAGE="ghcr.io/${{ github.repository }}/sample-app:latest"
+          if ! docker image inspect $IMAGE > /dev/null 2>&1; then
+            IMAGE="sample-app-local:latest"
+          fi
+
           docker run --rm \
             -v ${{ github.workspace }}:/app \
             -w /app \
-            ghcr.io/${{ github.repository }}/sample-app:latest \
+            $IMAGE \
             bash -c "mkdir -p build && cd build && cmake .. && make -j$(nproc)"
 
       - name: Make artifact name
@@ -95,6 +92,6 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: release_${{ steps.make_name.short }}
+          name: release_${{ steps.make_name.outputs.short }}
           path: build/ConvCsvJson
 

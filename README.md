@@ -38,11 +38,17 @@ CSV の読み込み、ヘッダ行の自動判定、JSON 形式への変換、�
 
 ```
 csv-json-converter-qt-sample/
+├─ .gitignore             # Git 管理対象外ファイル設定
+├─ .github
+│  └─ workflows
+│     └─ build.yml        # 自動ビルド用 GitHub Actions ファイル
 ├─ main.cpp               # エントリポイント
 ├─ mainwindow.cpp         # メインウィンドウの実装
 ├─ mainwindow.h
 ├─ mainwindow.ui          # UI レイアウト
 ├─ ConvCsvJson.pro        # Qt プロジェクトファイル
+├─ CMakeLists.txt         # CMake 用設定ファイル
+├─ Dockerfile             # 環境構築用 Dockerfile
 └─ README.md              # プロジェクト説明
 ```
 
@@ -52,9 +58,10 @@ Qt GUI アプリのビルド環境を Docker イメージとして管理し、
 **再現性の高いビルド**と**自動アーティファクト生成**を行います。
 
 ### 主なポイント
-- Dockerfile の digest 比較による環境イメージ更新  
-  GHCR に保存された環境イメージとローカルビルドの digest を比較し、
-  **Dockerfile に変更があった場合のみ** イメージを再ビルドします。
+- Dockerfile の変更検知による環境イメージ更新  
+  Git の差分を用いて Dockerfile の変更を検出し、
+  **Dockerfile に変更があった場合のみ** GHCR の環境イメージを再ビルド・再 push します。
+  変更がない場合は既存のイメージをそのまま利用します。
 
 - 毎回クリーンな Qt ビルド  
   Docker コンテナ内で以下を実行します：
