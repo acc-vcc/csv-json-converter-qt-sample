@@ -42,11 +42,24 @@ jobs:
             echo "changed=true" >> $GITHUB_OUTPUT
           fi
 
-      # Dockerfile が変わったときだけ GHCR に push
+      # GHCR にイメージが存在するか確認
+      - name: Check remote image exists
+        id: remote
+        run: |
+          IMAGE="ghcr.io/${{ github.repository }}/sample-app:latest"
+          if docker pull $IMAGE > /dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      # push 条件：
+      # 1. Dockerfile が変わった
+      # 2. GHCR にイメージが存在しない（初回 or 削除された）
       - name: Build and push Docker image
         env:
           GHCR_PAT: ${{ secrets.GHCR_PAT }}
-        if: steps.compare.outputs.changed == 'true' && env.GHCR_PAT != ''
+        if: (steps.compare.outputs.changed == 'true' || steps.remote.outputs.exists == 'false') && env.GHCR_PAT != ''
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -92,4 +105,3 @@ jobs:
         with:
           name: release_${{ steps.make_name.outputs.short }}
           path: build/ConvCsvJson
-
