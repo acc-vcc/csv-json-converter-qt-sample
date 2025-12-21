@@ -41,34 +41,41 @@ jobs:
           else
             echo "changed=true" >> $GITHUB_OUTPUT
           fi
+          echo "Dockerfile changed: ${{ steps.compare.outputs.changed }}"
 
       # GHCR にイメージが存在するか確認
       - name: Check remote image exists
         id: remote
         run: |
           IMAGE="ghcr.io/${{ github.repository }}/sample-app:latest"
+          echo "Checking remote image: $IMAGE"
           if docker manifest inspect $IMAGE > /dev/null 2>&1; then
             echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Remote image exists"
           else
             echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Remote image does NOT exist"
           fi
 
       # push 条件：
       # 1. Dockerfile が変わった
       # 2. GHCR にイメージが存在しない（初回 or 削除された）
       - name: Build and push Docker image
-        env:
-          GHCR_PAT: ${{ secrets.GHCR_PAT }}
-        if: (steps.compare.outputs.changed == 'true' || steps.remote.outputs.exists == 'false') && env.GHCR_PAT != ''
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          pull: true
-          tags: |
-            ghcr.io/${{ github.repository }}/sample-app:latest
-            ghcr.io/${{ github.repository }}/sample-app:sha-${{ github.sha }}
-          cache-from: type=registry,ref=ghcr.io/${{ github.repository }}/sample-app:cache
-          cache-to: type=registry,ref=ghcr.io/${{ github.repository }}/sample-app:cache,mode=max
+        if: steps.compare.outputs.changed == 'true' || steps.remote.outputs.exists == 'false'
+        run: |
+          if [ -z "${{ secrets.GHCR_PAT }}" ]; then
+            echo "GHCR_PAT not set; skipping push."
+            exit 0
+          fi
+
+          echo "Pushing image to GHCR..."
+          docker buildx build \
+            --push \
+            --tag ghcr.io/${{ github.repository }}/sample-app:latest \
+            --tag ghcr.io/${{ github.repository }}/sample-app:sha-${{ github.sha }} \
+            --cache-from type=registry,ref=ghcr.io/${{ github.repository }}/sample-app:cache \
+            --cache-to type=registry,ref=ghcr.io/${{ github.repository }}/sample-app:cache,mode=max \
+            .
 
       # GHCR にイメージが無い場合は fallback でローカル build
       - name: Ensure build image exists
