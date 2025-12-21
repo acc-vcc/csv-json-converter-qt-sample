@@ -55,8 +55,7 @@ jobs:
           digest=$(docker inspect --format='{{index .RepoDigests 0}}' local-sample-app:latest | cut -d'@' -f2)
           echo "digest=$digest" >> $GITHUB_OUTPUT
 
-      # Dockerfileの変更を検出するためリモートとローカルのdigestsイメージを比較する
-      - name: Compare digests
+      - name: Compare digests    # Dockerfileの変更を検出するためリモートとローカルのdigestsイメージを比較する
         id: compare
         run: |
           if [ "${{ steps.remote_digest.outputs.digest }}" = "${{ steps.local_digest.outputs.digest }}" ]; then
