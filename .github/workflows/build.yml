@@ -6,7 +6,7 @@ permissions:
 
 on:
   push:
-    branches: [ master ]
+    branches: [ feature/pushGHCR ]
 
 jobs:
   build:
@@ -47,10 +47,13 @@ jobs:
         id: remote
         run: |
           IMAGE="ghcr.io/${{ github.repository }}/sample-app:latest"
+          echo "Checking remote image: $IMAGE"
           if docker manifest inspect $IMAGE > /dev/null 2>&1; then
             echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Remote image exists"
           else
             echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Remote image does NOT exist"
           fi
 
       # push 条件：
