@@ -46,10 +46,31 @@ csv-json-converter-qt-sample/
 └─ README.md              # プロジェクト説明
 ```
 
+## CI/CD (GitHub Actionsによる自動ビルド)
+本プロジェクトには、GitHub Actions を用いた CI/CD を導入しています。
+Qt GUI アプリのビルド環境を Docker イメージとして管理し、
+**再現性の高いビルド**と**自動アーティファクト生成**を行います。
+
+### 主なポイント
+- Dockerfile の digest 比較による環境イメージ更新  
+  GHCR に保存された環境イメージとローカルビルドの digest を比較し、
+  **Dockerfile に変更があった場合のみ** イメージを再ビルドします。
+
+- 毎回クリーンな Qt ビルド  
+  Docker コンテナ内で以下を実行します：
+
+```
+cmake ..
+make -j$(nproc)
+```
+
+- ビルド成果物の自動アップロード  
+  成果物（ConvCsvJson 実行ファイル）は GitHub Actions の artifact として保存されます。
+
 ## Important Notes
 
 - JSON の仕様上、オブジェクトのキー順は保証されません。
-- Qt の `QJsonObject` はキーをアルファベット順に並べ替えるため、
+- Qt の `QJsonObject` はキーをアルファベット順に並べ替えるため、  
   CSV → JSON → CSV の往復で列順が変わる場合があります。
 - サンプルコードのため、列順保持などの高度な仕様は実装していません。
 - 改行コードの保持は行いません。
