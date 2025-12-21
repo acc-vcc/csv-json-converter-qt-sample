@@ -1,0 +1,45 @@
+# Qt Creator user-specific files
+*.pro.user
+*.pro.user.*
+*.qbs.user
+*.qbs.user.*
+
+# Qt build directories
+build*/
+debug/
+release/
+
+# Qt Creator generated files
+*.autosave
+*.qmlproject.user
+*.qmlproject.user.*
+
+# C++ build artifacts
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dll
+*.dylib
+*.exe
+
+# Qt moc / rcc / uic generated files
+moc_*.cpp
+moc_*.h
+qrc_*.cpp
+ui_*.h
+
+# Backup / temp files
+*~
+*.tmp
+*.bak
+*.swp
+*.log
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
