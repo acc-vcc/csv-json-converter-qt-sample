@@ -1,0 +1,95 @@
+name: CI/CD build
+
+permissions:
+  actions: write
+  contents: read
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker-container
+
+      - name: Log in to GitHub Container Registry
+        run: |
+          if [ -n "${{ secrets.GHCR_PAT }}" ]; then
+            echo "Login in to GHCR..."
+            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+          else
+            echo "GHCR_PAT not set; skipping GHCR login."
+          fi
+
+      # Dockerfile の変更を検出
+      - name: Check Dockerfile changes
+        id: compare
+        run: |
+          if git diff --quiet HEAD~1 HEAD -- Dockerfile; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      # Dockerfile が変わったときだけ GHCR に push
+      - name: Build and push Docker image
+        env:
+          GHCR_PAT: ${{ secrets.GHCR_PAT }}
+        if: steps.compare.outputs.changed == 'true' && env.GHCR_PAT != ''
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          pull: true
+          tags: |
+            ghcr.io/${{ github.repository }}/sample-app:latest
+            ghcr.io/${{ github.repository }}/sample-app:sha-${{ github.sha }}
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository }}/sample-app:cache
+          cache-to: type=registry,ref=ghcr.io/${{ github.repository }}/sample-app:cache,mode=max
+
+      # GHCR にイメージが無い場合は fallback でローカル build
+      - name: Ensure build image exists
+        run: |
+          IMAGE="ghcr.io/${{ github.repository }}/sample-app:latest"
+
+          if ! docker pull $IMAGE; then
+            echo "Remote image not found. Building local fallback image..."
+            docker build -t sample-app-local:latest .
+          fi
+
+      # ソースコードのビルド（常に実行）
+      - name: Build
+        run: |
+          IMAGE="ghcr.io/${{ github.repository }}/sample-app:latest"
+          if ! docker image inspect $IMAGE > /dev/null 2>&1; then
+            IMAGE="sample-app-local:latest"
+          fi
+
+          docker run --rm \
+            -v ${{ github.workspace }}:/app \
+            -w /app \
+            $IMAGE \
+            bash -c "mkdir -p build && cd build && cmake .. && make -j$(nproc)"
+
+      - name: Make artifact name
+        id: make_name
+        run: |
+          short=${GITHUB_SHA::8}
+          echo "short=$short" >> $GITHUB_OUTPUT
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release_${{ steps.make_name.outputs.short }}
+          path: build/ConvCsvJson
+
