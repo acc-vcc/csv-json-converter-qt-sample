@@ -65,7 +65,9 @@ jobs:
           fi
 
       - name: Build and push Docker image
-        if: steps.compare.outputs.changed == 'true' && secrets.GHCR_PAT != ''
+        env:
+          GHCR_PAT: ${{ secrets.GHCR_PAT }}
+        if: steps.compare.outputs.changed == 'true' && env.GHCR_PAT != ''
         uses: docker/build-push-action@v5
         with:
           context: .
