@@ -1,5 +1,7 @@
 # Qt CSV ⇄ JSON Converter
 
+![Build](https://github.com/acc-vcc/csv-json-converter-qt-sample/actions/workflows/build.yml/badge.svg)
+
 Qt5 を使用して作成した、CSV と JSON の相互変換ツールです。  
 Qt を用いた GUI アプリケーション開発のサンプルとして作成しました。
 
