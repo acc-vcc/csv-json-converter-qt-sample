@@ -1,41 +1,64 @@
-# CSV ⇄ JSON Converter (Qt Sample)
+# Qt CSV ⇄ JSON Converter
 
-このプロジェクトは、Qt を使用した CSV ⇄ JSON 変換ツールのサンプルです。
-CSV の読み込み、ヘッダ行の自動判定、JSON 形式への変換、および逆変換を行います。
-副業・業務委託向けのサンプルコードとして作成しています。
+Qt5 を使用して作成した、CSV と JSON の相互変換ツールです。  
+Qt を用いた GUI アプリケーション開発のサンプルとして作成しました。
 
-## Features
+GUI ベースのため、コマンドラインに不慣れな環境でも扱いやすく、  
+小規模な業務ツールの実装例として利用できます。
 
-- GUI アプリケーション
-- CSV → JSON 変換
-- JSON → CSV 変換
-- 入力ファイルが CSV / JSON のどちらかを自動判定
-- ヘッダ行の自動判定（1 行目と 2 行目の内容を比較）
-- 改行やクォートを含む CSV に対応
-- Qt（QFile / QTextStream / QJsonDocument）を使用した実装例
+---
 
-## Build
+## 🛠 使用技術
 
-1. Qt Creator でプロジェクトを開く
-2. Kit を選択する
-3. Build & Run を実行
+- **Qt 5.x（Qt Widgets）**
+- **C++17（Qt API を中心に構成）**
+- **QFile / QTextStream によるファイル入出力**
+- **qmake / CMake（どちらでもビルド可能）**
+- **GitHub Actions（自動ビルド）**
+- **Docker（環境構築用）**
 
-## Usage
+---
 
-### CSV → JSON
+## 📌 機能概要
 
-1. 「入力ファイル選択」から CSV ファイルを選択
-2. 「変換実行」をクリック
-3. JSON ファイルが出力されます
+- CSV → JSON 変換  
+- JSON → CSV 変換  
+- 入力ファイル形式の自動判定（CSV / JSON）  
+- CSV のヘッダ行有無の自動判定  
+- **改行やクォートを含む一般的な CSV 形式に対応**  
+- エラー・警告ログの表示（ログレベルに応じた文字色変更）  
+- シンプルで扱いやすい GUI
 
-### JSON → CSV
+---
 
-1. 「入力ファイル選択」から JSON ファイルを選択
-2. 「変換実行」をクリック
-3. CSV ファイルが出力されます
+## 🧩 実装ポイント
 
-## Directory Structure
+- Qt Widgets を用いたシンプルな GUI 構成  
+- 画面レイアウトはすべて `.ui` ファイルで構成し、  
+  **水平・垂直レイアウトによりウィンドウサイズに応じて自動リサイズされる設計**  
+- `QFile` と `QTextStream` を使用した入出力処理  
+- 戻り値によるエラーハンドリング（例外は未使用）  
+- CSV/JSON の自動判定ロジックを実装  
+- qmake と CMake の両方でビルド可能  
+- GitHub Actions による自動ビルド設定  
+- Dockerfile による環境構築例を用意
 
+---
+
+## ⚠️ 制限事項 / 注意事項
+
+- JSON の仕様上、オブジェクトのキー順は保証されません。  
+- Qt の `QJsonObject` はキーをアルファベット順に並べ替えるため、  
+  **CSV → JSON → CSV の往復で列順が変わる場合があります。**
+- サンプルコードのため、列順保持などの高度な仕様は実装していません。
+- 改行コードの保持は行っていません。
+- CSV 判定は簡易的で、以下の条件で判定しています：  
+  - 拡張子が `.csv`  
+  - またはファイル先頭 20 文字以内にカンマが存在する  
+
+---
+
+## 📁 ディレクトリ構成
 ```
 csv-json-converter-qt-sample/
 ├─ .gitignore             # Git 管理対象外ファイル設定
@@ -52,43 +75,43 @@ csv-json-converter-qt-sample/
 └─ README.md              # プロジェクト説明
 ```
 
-## CI/CD (GitHub Actionsによる自動ビルド)
-本プロジェクトには、GitHub Actions を用いた CI/CD を導入しています。
-Qt GUI アプリのビルド環境を Docker イメージとして管理し、
-**再現性の高いビルド**と**自動アーティファクト生成**を行います。
+---
 
-### 主なポイント
-- Dockerfile の変更検知による環境イメージ更新  
-  Git の差分を用いて Dockerfile の変更を検出し、
-  **Dockerfile に変更があった場合のみ** GHCR の環境イメージを再ビルド・再 push します。
-  変更がない場合は既存のイメージをそのまま利用します。
+## 📂 ビルド方法
 
-- 毎回クリーンな Qt ビルド  
-  Docker コンテナ内で以下を実行します：
+### qmake を使用する場合
+1. Qt 5.x をインストール  
+2. Qt Creator でプロジェクトを開く  
+3. ビルド構成を選択（Debug / Release）  
+4. 実行
+
+### CMake を使用する場合
+1. Qt 5.x と CMake をインストール  
+2. プロジェクトルートで以下を実行
 
 ```
-cmake ..
-make -j$(nproc)
+cmake -B build
+cmake --build build
 ```
+3. 生成された実行ファイルを起動
 
-- ビルド成果物の自動アップロード  
-  成果物（ConvCsvJson 実行ファイル）は GitHub Actions の artifact として保存されます。
+---
 
-## Important Notes
+## 📷 画面イメージ
 
-- JSON の仕様上、オブジェクトのキー順は保証されません。
-- Qt の `QJsonObject` はキーをアルファベット順に並べ替えるため、  
-  CSV → JSON → CSV の往復で列順が変わる場合があります。
-- サンプルコードのため、列順保持などの高度な仕様は実装していません。
-- 改行コードの保持は行いません。
-- 拡張子が `.csv` でない場合、またはファイル先頭 20 文字以内にカンマが存在しない場合、CSV と判定できません。
+（※現在 Qt 実行環境がないため、画面イメージは後日追加予定です）
 
-## .gitignore
+---
 
-Qt Creator のユーザ設定ファイル（`*.pro.user`）やビルド生成物は
-Git に含めないよう `.gitignore` を設定しています。
+## 📄 License
+This project is licensed under the MIT License.
 
-## License
+---
 
-MIT License
+## 📫 連絡について
 
+ご相談やご依頼がありましたら、以下のメールアドレスまでご連絡ください。
+
+**📧 acc.vcc.work@gmail.com**
+
+丁寧に対応いたします。
