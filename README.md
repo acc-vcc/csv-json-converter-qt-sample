@@ -101,7 +101,7 @@ cmake --build build
 
 ## 📷 画面イメージ
 
-（※現在 Qt 実行環境がないため、画面イメージは後日追加予定です）
+![CSV⇄JSON相互互換ツールメイン画面](images/screenshot.png)
 
 ---
 
